@@ -6,16 +6,21 @@ const User = require('../models/user');
 const Schedule = require('../models/schedule');
 const Candidate = require('../models/candidate');
 
-describe('/login', () => {
-  beforeAll(() => {
-    passportStub.install(app);
-    passportStub.login({ username: 'testuser' });
-  });
+// テスト開始前
+const setUp = () => {
+  passportStub.install(app);
+  passportStub.login({ id: 0, username: 'testuser' });
+};
 
-  afterAll(() => {
-    passportStub.logout();
-    passportStub.uninstall();
-  });
+// テスト終了後
+const tearDown = () => {
+  passportStub.logout();
+  passportStub.uninstall();
+};
+
+describe('/login', () => {
+  beforeAll(() => { setUp(); });
+  afterAll(() => { tearDown(); });
 
   test('ログインのためのリンクが含まれる', async () => {
     await request(app)
@@ -44,14 +49,10 @@ describe('/logout', () => {
 
 describe('/schedules', () => {
   let scheduleId = '';
-  beforeAll(() => {
-    passportStub.install(app);
-    passportStub.login({ id: 0, username: 'testuser' });
-  });
+  beforeAll(() => { setUp(); });
 
   afterAll(async () => {
-    passportStub.logout();
-    passportStub.uninstall();
+    tearDown();
 
     // テストで作成したデータを削除
     const candidates = await Candidate.findAll({
@@ -81,8 +82,12 @@ describe('/schedules', () => {
     scheduleId = createdSchedulePath.split('/schedules/')[1];
     await request(app)
       .get(createdSchedulePath)
-      // TODO 作成された予定と候補が表示されていることをテストする
+      .expect(/テスト予定1/)
+      .expect(/テストメモ1/)
+      .expect(/テストメモ2/)
+      .expect(/テスト候補1/)
+      .expect(/テスト候補2/)
+      .expect(/テスト候補3/)
       .expect(200)
   });
 });
-
